@@ -1,0 +1,4 @@
+Date,File,Change,Author
+01-27-2026,K1T_B0T.html,Modified visual styles and updates LOGO.png to eerc.webp,Eli G 
+01-27-2026,K1T_B0T.html,Added loadDeletePanel function to dynamically load delete panel content,Caleb Schweigert
+01-27-2026,K1T_B0T.html,Updated Summary to have a chat bubble and loadSummaryPanel function,Caleb Schweigert

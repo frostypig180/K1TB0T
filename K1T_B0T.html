@@ -1,0 +1,494 @@
+<!-------------------------------
+K1T BOT HTML Interface
+Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
+-------------------------------->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>K1T BOT</title>
+  <style>
+    :root {
+      --black: #000;
+      --gold: #ffcc00;
+      --white: #fff;
+      --gray: #1a1a1a;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--black);
+      color: var(--white);
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: var(--gray);
+      text-align: center;
+      position: sticky;
+      border-bottom: 2px solid var(--gold);
+      font-size: 1.2rem;
+    }
+    .mtu-LOGO {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      height: 80px;
+      width: 80px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+    .kit-image {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      height: 80px;
+      width: 80px;
+      border-radius: 5px;
+      object-fit: cover;
+    }
+    footer {
+      background-color: var(--gray);
+      border-top: 2px solid var(--gold);
+      text-align: center;
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--gold);
+    }
+    .panel {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      background-color: var(--black);
+      border: 2px solid var(--gold);
+      box-sizing: border-box;
+    }
+    .active {
+      display: flex;
+    }
+    .admin-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 2rem;
+      overflow-y: auto;
+      background-color: var(--black);
+    }
+    .back-button {
+      background-color: var(--gold);
+      color: var(--black);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      align-self: flex-start;
+      margin-bottom: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    .back-button:hover { background-color: #e6b800; }
+    /* Chat styling */
+    #chat-container {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      background-color: var(--black);
+    }
+
+    .delete-button {
+      background-color: #cc3300;
+      color: var(--white);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      align-self: flex-start;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    .delete-button:hover { background-color: #952500; }
+    /* Chat styling */
+    #chat-container {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      background-color: var(--black);
+    }
+
+    .message {
+      max-width: 70%;
+      margin: 0.5rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      line-height: 1.5;
+      font-size: 1rem;
+    }
+    .user { align-self: flex-end; background-color: var(--gold); color: var(--black); }
+    .bot { align-self: flex-start; background-color: var(--gray); color: var(--white); }
+    #input-area {
+      display: flex;
+      padding: 1rem;
+      border-top: 2px solid var(--gold);
+      background-color: var(--gray);
+    }
+    #user-input {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    #send-button {
+      margin-left: 1rem;
+      background-color: var(--gold);
+      color: var(--black);
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #send-button:hover { background-color: #e6b800; }
+    /* Dashboard grid */
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    .image-card {
+      background-color: var(--gray);
+      border: 2px solid var(--gold);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .image-card:hover { transform: translateY(-5px); box-shadow: 0 0 15px var(--gold); }
+    .image-card img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--gold); }
+    .image-card .info { padding: 0.75rem 1rem; }
+    .image-card .info h3 { margin: 0 0 0.5rem; color: var(--gold); }
+    /* Table and form styles */
+    table{width:100%;border-collapse:collapse;background-color:var(--gray);border:2px solid var(--gold);}
+    th,td{border:2px solid var(--gold);padding:0.75rem;text-align:left;}
+    th{background-color:#333;color:var(--gold);}
+    tr:nth-child(even){background-color:#111;}
+    form{display:flex;flex-direction:column;gap:1rem;background-color:var(--gray);border:2px solid var(--gold);border-radius:10px;padding:2rem;}
+    input,textarea{padding:0.75rem;border:none;border-radius:5px;font-size:1rem;}
+    button{background-color:var(--gold);color:var(--black);border:none;padding:0.75rem 1.25rem;border-radius:5px;font-weight:bold;cursor:pointer;}
+    button:hover{background-color:#e6b800;}
+  </style>
+</head>
+<body>
+  <!-- Chat Panel -->
+  <div id="chat-panel" class="panel active">
+    <header>
+      <img src="images/eerc.webp" class="mtu-LOGO">
+      <img src="images/newKit.jpeg" class="kit-image">
+      <h1>K1T BOT</h1>
+    </header>
+    <div id="chat-container"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Type your message...">
+      <button id="send-button">Send</button>
+    </div>
+    <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="admin-panel" class="panel">
+    <header>
+      <img src="images/eerc.webp" class="mtu-LOGO">
+      <img src="images/newKit.jpeg" class="kit-image">
+      <h1>K1T BOT | Administrator Panel</h1>
+    </header>
+    <main class="admin-main">
+      <button class="back-button" onclick="showPanel('chat-panel')">← Return to Chat</button>
+      <div class="image-gallery">
+        <div class="image-card" onclick="showPanel('upload')">
+          <img src="images/cloud.jpg">
+          <div class="info"><h3>Upload New Resource</h3></div>
+        </div>
+        <div class="image-card" onclick="showPanel('delete')">
+          <img src="images/delete.jpg">
+          <div class="info"><h3>Delete Resource</h3></div>
+        </div>
+        <div class="image-card" onclick="showPanel('summary')">
+          <img src="images/summary.jpg">
+          <div class="info"><h3>Generate Summary</h3></div>
+        </div>
+      </div>
+    </main>
+    <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
+  </div>
+
+  <!--Delete Resource Panel (Previous Student Chat Data Panel)-->
+  <div id="delete" class="panel">
+    <header>
+      <img src="images/eerc.webp" class="mtu-LOGO">
+      <img src="images/newKit.jpeg" class="kit-image">
+      <h1>Delete Resource</h1>
+    </header>
+    <main class="admin-main">
+      <button class="back-button" onclick="showPanel('admin-panel')">← Back</button>
+      <table id="delete-table">
+        <tr><th>Resource</th>
+      </table>
+      <button class="delete-button" onclick="deleteSelectedResources()">Delete Selected Resource</button>
+    </main>
+    <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
+  </div>
+
+  <!--Summary Panel (Previously Analytics Overview Panel)-->
+  <div id="summary" class="panel">
+    <header>
+      <img src="images/eerc.webp" class="mtu-LOGO">
+      <img src="images/newKit.jpeg" class="kit-image">
+      <h1>Summary</h1>
+    </header>
+    <main class="admin-main">
+      <button class="back-button" onclick="showPanel('admin-panel')">← Back</button>
+      <div id="summary-chat" style="display:flex;flex-direction:column;"></div>
+    </main>
+    <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
+  </div>
+
+  <!-- Upload Resource -->
+  <div id="upload" class="panel">
+    <header>
+      <img src="images/eerc.webp" class="mtu-LOGO">
+      <img src="images/newKit.jpeg" class="kit-image">
+      <h1>Upload New Resource</h1>
+    </header>
+    <main class="admin-main">
+      <button class="back-button" onclick="showPanel('admin-panel')">← Back</button>
+      <form id="upload-form" action="http://127.0.0.1:8001/upload" method="post" enctype="multipart/form-data">
+        <input id="file-input" type="file" name="file" accept=".txt" required>
+        <div style="margin-top:0.5rem"><button type="submit">Upload Resource</button></div>
+      </form>
+      <div id="upload-result" style="margin-top:0.75rem;color:var(--gold);"></div>
+    </main>
+    <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
+  </div>
+
+  <script>
+  const userInput = document.getElementById("user-input");
+  const sendButton = document.getElementById("send-button");
+  const chatContainer = document.getElementById("chat-container");
+
+  // -------------------------------
+  // Append Chat Messages to UI
+  // -------------------------------
+  function appendMessage(sender, text) {
+    const msg = document.createElement("div");
+    msg.classList.add("message", sender);
+    msg.textContent = text;
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+  //-------------------------------
+  //Load Summary Panel Chat
+  //-------------------------------
+  async function loadSummaryPanel() {
+    const container = document.getElementById("summary-chat");
+    container.innerHTML = "";
+
+    //bot bubble
+    const bubble = document.createElement("div");
+    bubble.classList.add("message", "bot");
+    bubble.textContent = "Generating summary, please wait...";
+    container.appendChild(bubble);
+  }
+
+
+  // -------------------------------
+  // Load Resources into Delete Panel
+  // -------------------------------
+  async function loadDeletePanel() {
+    const table = document.getElementById("delete-table");
+    table.innerHTML = "<tr><th>Resource</th></tr>";
+
+    try {
+      const resp = await fetch("http://127.0.0.1:8001/instructions");
+      if (!resp.ok) throw new Error("Failed to fetch resource list");
+
+      const files = await resp.json();
+
+      if (files.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = "<td>No resources found.</td>";
+        table.appendChild(row);
+        return;
+      }
+
+      files.forEach(file => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>
+            <input type="checkbox" name="delete-resource" value="${file}">
+            ${file}
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    } catch (err) {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td style="color:red;">Error loading resources</td>`;
+      table.appendChild(row);
+    }
+  }
+
+  //-------------------------------
+  // Delete Selected Resources
+  //-------------------------------
+  async function deleteSelectedResources() {
+    const checkboxes = document.querySelectorAll('input[name="delete-resource"]:checked');
+    const resourcesToDelete = Array.from(checkboxes).map(cb => cb.value);
+    if (resourcesToDelete.length === 0) {
+      alert("No resources selected for deletion.");
+      return;
+    }
+    if(!confirm('Delete ${resourcesToDelete.length} selected resource(s)? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const resp = await fetch("http://127.0.0.1:8001/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resources: resourcesToDelete }),
+      });
+      if (!resp.ok) throw new Error("Failed to delete resources");
+      alert("Selected resources deleted successfully.");
+      
+      loadDeletePanel(); //refresh lish
+    } catch (err) {
+      alert("Error deleting resources: " + err.message);
+    }
+  }
+
+  // -------------------------------
+  // User Input Handling
+  // -------------------------------
+  sendButton.onclick = () => handleInput();
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleInput();
+  });
+
+  async function handleInput() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    appendMessage("user", text);
+    userInput.value = "";
+
+    // ADMIN MODE LOGIN
+    if (text === "4321ADMIN") {
+      appendMessage("bot", "Access granted.");
+      setTimeout(() => showPanel("admin-panel"), 600);
+      return;
+    }
+
+    // Otherwise send to LLM backend
+    await sendToBot(text);
+  }
+
+  // -------------------------------
+  // STREAMING CHAT REQUEST
+  // -------------------------------
+  async function sendToBot(message) {
+    // Create bot bubble immediately
+    const botMsg = document.createElement("div");
+    botMsg.classList.add("message", "bot");
+    botMsg.textContent = "";
+    chatContainer.appendChild(botMsg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+      const response = await fetch("http://localhost:8001/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        botMsg.textContent = "[ERROR] Server error.";
+        return;
+      }
+
+      // -----------------------
+      // Read Stream
+      // -----------------------
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        botMsg.textContent += decoder.decode(value, { stream: true });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    } catch (err) {
+      botMsg.textContent = "[ERROR] Unable to connect to server.";
+    }
+  }
+
+  // -------------------------------
+  // Panel Switching System
+  // -------------------------------
+  function showPanel(id) {
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    //load delete panel resources
+    if (id === "delete") {
+      loadDeletePanel();
+    }
+    //load summary panel chat
+    if( id === "summary") {
+      loadSummaryPanel();
+    }
+  }
+
+  // -------------------------------
+  // Upload form handling (AJAX)
+  // -------------------------------
+  const uploadForm = document.getElementById('upload-form');
+  const uploadResult = document.getElementById('upload-result');
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      uploadResult.textContent = 'Uploading...';
+      const fd = new FormData(uploadForm);
+      try {
+        const resp = await fetch(uploadForm.action, { method: 'POST', body: fd });
+        if (!resp.ok) {
+          const err = await resp.text();
+          uploadResult.textContent = 'Upload failed: ' + err;
+          return;
+        }
+        const data = await resp.json();
+        // show the uploaded file link briefly, then return to upload menu
+        uploadResult.innerHTML = `Uploaded: ${data.filename}`;
+        uploadForm.reset();
+        setTimeout(() => {
+          // Switch back to the upload panel
+          showPanel('upload');
+        }, 800);
+      } catch (err) {
+        uploadResult.textContent = 'Upload error: ' + err.message;
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
