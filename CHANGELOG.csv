@@ -9,4 +9,4 @@ Date,File,Change,Author
 02-03-2026,README.md,Updated README with new delete and upload instructions,Caleb Schweigert
 02-09-2026,n/a, Installed 5 packages to get the SQL working: PostgreSQL SAQLAlchemy asyncpg alembic python-dotenv   Installed update to pip from 25.3 --> 26.0.1, Will Dani
 02-13-2026,n/a,added cloudflared tunnel configuration. updated bot prompt format for better AI understanding. added session ids to separate multiple user sessions,Eli Gruhlke
-02-14-2026,K1T_B0T.html,renamed to "index.html",Eli Gruhlke
+02-14-2026,K1T_B0T.html,renamed to "index.html" so it is accessible from the root URL,Eli Gruhlke
