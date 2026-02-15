@@ -93,7 +93,7 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
       transition: background-color 0.3s ease;
     }
     .back-button:hover { background-color: #e6b800; }
-    /* Chat styling */
+
     #chat-container {
       flex: 1;
       padding: 1rem;
@@ -115,13 +115,6 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
       transition: background-color 0.3s ease;
     }
     .delete-button:hover { background-color: #952500; }
-    /* Chat styling */
-    #chat-container {
-      flex: 1;
-      padding: 1rem;
-      overflow-y: auto;
-      background-color: var(--black);
-    }
 
     .message {
       max-width: 70%;
@@ -130,9 +123,11 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
       border-radius: 10px;
       line-height: 1.5;
       font-size: 1rem;
+      white-space: pre-wrap; /* nice for streamed text/newlines */
     }
     .user { align-self: flex-end; background-color: var(--gold); color: var(--black); }
     .bot { align-self: flex-start; background-color: var(--gray); color: var(--white); }
+
     #input-area {
       display: flex;
       padding: 1rem;
@@ -157,7 +152,7 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
       cursor: pointer;
     }
     #send-button:hover { background-color: #e6b800; }
-    /* Dashboard grid */
+
     .image-gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -177,7 +172,7 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     .image-card img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--gold); }
     .image-card .info { padding: 0.75rem 1rem; }
     .image-card .info h3 { margin: 0 0 0.5rem; color: var(--gold); }
-    /* Table and form styles */
+
     table{width:100%;border-collapse:collapse;background-color:var(--gray);border:2px solid var(--gold);}
     th,td{border:2px solid var(--gold);padding:0.75rem;text-align:left;}
     th{background-color:#333;color:var(--gold);}
@@ -231,7 +226,7 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
   </div>
 
-  <!--Delete Resource Panel (Previous Student Chat Data Panel)-->
+  <!--Delete Resource Panel-->
   <div id="delete" class="panel">
     <header>
       <img src="images/eerc.webp" class="mtu-LOGO">
@@ -241,14 +236,14 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     <main class="admin-main">
       <button class="back-button" onclick="showPanel('admin-panel')">← Back</button>
       <table id="delete-table">
-        <tr><th>Resource</th>
+        <tr><th>Resource</th></tr>
       </table>
       <button class="delete-button" onclick="deleteSelectedResources()">Delete Selected Resource</button>
     </main>
     <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
   </div>
 
-  <!--Summary Panel (Previously Analytics Overview Panel)-->
+  <!--Summary Panel-->
   <div id="summary" class="panel">
     <header>
       <img src="images/eerc.webp" class="mtu-LOGO">
@@ -271,10 +266,13 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     </header>
     <main class="admin-main">
       <button class="back-button" onclick="showPanel('admin-panel')">← Back</button>
-      <form id="upload-form" action="http://127.0.0.1:8001/upload" method="post" enctype="multipart/form-data">
+
+      <!-- IMPORTANT: use /api/... so it works behind Nginx + Cloudflare Tunnel -->
+      <form id="upload-form" action="https://api.k1tb0t.com/upload" method="post" enctype="multipart/form-data">
         <input id="file-input" type="file" name="file" accept=".txt" required>
         <div style="margin-top:0.5rem"><button type="submit">Upload Resource</button></div>
       </form>
+
       <div id="upload-result" style="margin-top:0.75rem;color:var(--gold);"></div>
     </main>
     <footer>2026 K1T BOT | Wireless Communications Enterprise | Michigan Technological University</footer>
@@ -284,7 +282,8 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
   const userInput = document.getElementById("user-input");
   const sendButton = document.getElementById("send-button");
   const chatContainer = document.getElementById("chat-container");
-
+  const SID = crypto.randomUUID(); // Unique session ID for this user (can be used for chat history management on server)
+  sendToBot("Hello, K1T B0T.");
   // -------------------------------
   // Append Chat Messages to UI
   // -------------------------------
@@ -295,20 +294,19 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     chatContainer.appendChild(msg);
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
+
   //-------------------------------
-  //Load Summary Panel Chat
+  // Load Summary Panel Chat
   //-------------------------------
   async function loadSummaryPanel() {
     const container = document.getElementById("summary-chat");
     container.innerHTML = "";
 
-    //bot bubble
     const bubble = document.createElement("div");
     bubble.classList.add("message", "bot");
     bubble.textContent = "Generating summary, please wait...";
     container.appendChild(bubble);
   }
-
 
   // -------------------------------
   // Load Resources into Delete Panel
@@ -318,7 +316,7 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     table.innerHTML = "<tr><th>Resource</th></tr>";
 
     try {
-      const resp = await fetch("http://127.0.0.1:8001/instructions");
+      const resp = await fetch("https://api.k1tb0t.com/list");
       if (!resp.ok) throw new Error("Failed to fetch resource list");
 
       const files = await resp.json();
@@ -353,23 +351,41 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
   async function deleteSelectedResources() {
     const checkboxes = document.querySelectorAll('input[name="delete-resource"]:checked');
     const resourcesToDelete = Array.from(checkboxes).map(cb => cb.value);
+
     if (resourcesToDelete.length === 0) {
       alert("No resources selected for deletion.");
       return;
     }
-    if(!confirm('Delete ${resourcesToDelete.length} selected resource(s)? This action cannot be undone.')) {
+
+    if (!confirm(`Delete ${resourcesToDelete.length} selected resource(s)? This action cannot be undone.`)) {
       return;
     }
+
     try {
-      const resp = await fetch("http://127.0.0.1:8001/delete", {
-        method: "POST",
+      // IMPORTANT: /api/... for Nginx proxy
+      const resp = await fetch("https://api.k1tb0t.com/delete", {
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resources: resourcesToDelete }),
       });
-      if (!resp.ok) throw new Error("Failed to delete resources");
-      alert("Selected resources deleted successfully.");
-      
-      loadDeletePanel(); //refresh lish
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        const errMsg = data.detail
+          || (data.errors && data.errors.length ? data.errors.join("\n") : null)
+          || resp.statusText;
+        alert("Delete failed: " + errMsg);
+        return;
+      }
+
+      let msg = "Deleted: " + ((data.deleted && data.deleted.length) ? data.deleted.join(", ") : "(none)");
+      if (data.errors && data.errors.length) {
+        msg += "\n\nErrors:\n" + data.errors.join("\n");
+      }
+      alert(msg);
+
+      loadDeletePanel();
     } catch (err) {
       alert("Error deleting resources: " + err.message);
     }
@@ -397,6 +413,11 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
       return;
     }
 
+    // TRIGGER TO SAVE CONVERSATION TO SERVER
+    if (text === "FINISH") {
+      // implement if needed
+    }
+
     // Otherwise send to LLM backend
     await sendToBot(text);
   }
@@ -405,7 +426,6 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
   // STREAMING CHAT REQUEST
   // -------------------------------
   async function sendToBot(message) {
-    // Create bot bubble immediately
     const botMsg = document.createElement("div");
     botMsg.classList.add("message", "bot");
     botMsg.textContent = "";
@@ -413,9 +433,13 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
-      const response = await fetch("http://localhost:8001/chat", {
+      // IMPORTANT: /api/... for Nginx proxy
+      const response = await fetch("https://api.k1tb0t.com/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Session-Id": SID // Send session ID for server-side chat history management (if implemented)
+         },
         body: JSON.stringify({ message }),
       });
 
@@ -424,9 +448,6 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
         return;
       }
 
-      // -----------------------
-      // Read Stream
-      // -----------------------
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
@@ -448,12 +469,11 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
   function showPanel(id) {
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     document.getElementById(id).classList.add("active");
-    //load delete panel resources
+
     if (id === "delete") {
       loadDeletePanel();
     }
-    //load summary panel chat
-    if( id === "summary") {
+    if (id === "summary") {
       loadSummaryPanel();
     }
   }
@@ -476,11 +496,9 @@ Authors: Beaumont Ujlaky, Caleb Schweigert, and Eli Gruhlke
           return;
         }
         const data = await resp.json();
-        // show the uploaded file link briefly, then return to upload menu
         uploadResult.innerHTML = `Uploaded: ${data.filename}`;
         uploadForm.reset();
         setTimeout(() => {
-          // Switch back to the upload panel
           showPanel('upload');
         }, 800);
       } catch (err) {

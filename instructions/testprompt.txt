@@ -1,0 +1,3 @@
+This lesson went over some more advanced use cases and applications for pointers.
+We discussed pointers to pointers and how they might be used in 2D arrays and linked structures. 
+Then, we discussed function pointers and how we might use those to make generic functions to avoid repeating code.
