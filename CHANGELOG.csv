@@ -10,3 +10,13 @@ Date,File,Change,Author
 02-09-2026,n/a, Installed 5 packages to get the SQL working: PostgreSQL SAQLAlchemy asyncpg alembic python-dotenv   Installed update to pip from 25.3 --> 26.0.1, Will Dani
 02-13-2026,n/a,added cloudflared tunnel configuration. updated bot prompt format for better AI understanding. added session ids to separate multiple user sessions,Eli Gruhlke
 02-14-2026,K1T_B0T.html,renamed to "index.html" so it is accessible from the root URL,Eli Gruhlke
+02-14-2026,n/a,changed cloudflare setting to always use https. adds functionality for mobile devices which default to http, Eli Gruhlke
+02-14-2026,main.py,added hidden message that is sent at the start of every session to trigger any session initialization on the backend, Eli Gruhlke
+02-15-2026,index.html admin/index.html main.py,removed admin login and respective admin features. added admin/index.html. added function to main.py to prompt for login at k1tb0t.com/admin,Eli Gruhlke
+02-24-2026,n/a, tested functionality of admin page on google chrome, Caleb Schweigert
+02-24-2026,index.html, added mic and tts buttons to UI (functionality needs to be ironed out), Caleb Schweigert
+03-11-2026,n/a, installed psycopg2 to connect to postgres database and installed python dotenv for loading environment variables, Will Dani
+03-11-2026,.env, created the .env file to store database credentials, Will Dani
+03-26-2026,index.html, added functionality to tts button and added stt, Caleb Schweigert
+03-26-2026, index.html admin/index.html, worked on spicing up the UI to make it more visually appealing, Caleb Schweigert
+03-27-2026,main.py, changed the system prompt to only include the bot rules and changed the user prompt to include the lesson notes, Eli Gruhlke

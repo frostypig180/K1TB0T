@@ -1,10 +1,12 @@
 import os
 from werkzeug.utils import secure_filename
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Header
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header, status, Depends
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 from openai import OpenAI
 import shutil
 import asyncio
@@ -17,11 +19,16 @@ import queue
 # Authors: Eli Gruhlke, Ian Walch, Will Dani, Beaumont Ujlaky, Caleb Schweigert, and Erik Greiner
 # ===============================================================================================
 
+USER = "admin"
+PASS = "wce2026"
+
 # Connect to local vLLM server
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="EMPTY")
 model = "mistralai/Mistral-7B-Instruct-v0.3"
 # Path to instructions directory
 instructions_path = "/home/k1tbot/Documents/k1tbot/instructions"
+# Path to bot rules file
+rules_path = "/home/k1tbot/Documents/k1tbot/bot_rules/BotPrompt.txt"
 # Initialize chat histories and locks for multiple users
 chat_histories: dict[str, list[dict[str, str]]] = {}
 chat_locks: dict[str, asyncio.Lock] = {}
@@ -30,17 +37,34 @@ app = FastAPI()
 # Allow frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://k1tb0t.com"],
-    allow_credentials=True,
+    allow_origins=["https://k1tb0t.com", "https://www.k1tb0t.com"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Basic auth for admin endpoints
+security = HTTPBasic()
+def check_auth(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, USER)
+    correct_password = secrets.compare_digest(credentials.password, PASS)
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 # Uploads configuration
 UPLOAD_FOLDER = instructions_path
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.pdf', '.csv', '.txt', '.json', '.mp4'}
 # Mount uploads as static files so they can be served at /instructions/{filename}
 app.mount('/instructions', StaticFiles(directory=UPLOAD_FOLDER), name='instructions')
+# Load bot rules
+def load_bot_rules() -> str:
+    try:
+        return Path(rules_path).read_text(encoding="utf-8").strip()
+    except Exception as e:
+        return f"Could not read bot rules! ({e})"
 # Read all files in instructions directory
 def load_instructions() -> str:
     parts = []
@@ -59,7 +83,10 @@ def get_history_and_lock(sid: str):
     if sid not in chat_locks:
         chat_locks[sid] = asyncio.Lock()
     return chat_histories[sid], chat_locks[sid]    
-
+# admin endpoint
+@app.get("/admin")
+def admin_root(auth: str = Depends(check_auth)):
+    return FileResponse("admin/index.html")
 # File upload endpoint
 @app.post('/upload')
 async def upload(file: UploadFile = File(...)):
@@ -87,14 +114,16 @@ async def upload(file: UploadFile = File(...)):
     finally:
         await file.close()
     # Reload instructions after upload
-    bot_prompt = load_instructions()
-    for sid, hist in chat_histories.items():
-        if hist and hist[0]["role"] == "system":
-            hist[0]["content"] = bot_prompt
-        else:
-            chat_histories[sid] = [{"role": "system", "content": bot_prompt}]
+    bot_prompt = load_bot_rules()
+    lesson_notes = load_instructions()
+    # Clear chat history, load bot rules as system prompt, load lesson notes as first user message
+    for sid in chat_histories.items():
+        chat_histories[sid].clear()
+        chat_histories[sid] = [
+            {"role": "system", "content": bot_prompt},
+            {"role": "user", "content": lesson_notes}
+        ]
     return {"filename": safe_name}
-
 # File Delete Endpoint
 @app.delete("/delete")
 async def delete_resources(payload: dict):
@@ -115,13 +144,16 @@ async def delete_resources(payload: dict):
             deleted_files.append(safe_name)
         except Exception as e:
             errors.append(f"Error deleting {safe_name}: {str(e)}")
-    # Reload instructions after deletion
-    bot_prompt = load_instructions()
-    for sid, hist in chat_histories.items():
-        if hist and hist[0]["role"] == "system":
-            hist[0]["content"] = bot_prompt
-        else:
-            chat_histories[sid] = [{"role": "system", "content": bot_prompt}]
+    # Reload instructions after upload
+    bot_prompt = load_bot_rules()
+    lesson_notes = load_instructions()
+    # Clear chat history, load bot rules as system prompt, load lesson notes as first user message
+    for sid in chat_histories.items():
+        chat_histories[sid].clear()
+        chat_histories[sid] = [
+            {"role": "system", "content": bot_prompt},
+            {"role": "user", "content": lesson_notes}
+        ]
     return {
         "deleted": deleted_files,
         "errors": errors
@@ -135,6 +167,14 @@ async def chat(payload: dict, x_session_id: str = Header(None, alias="X-Session-
     # Get user message and chat history for this session
     user_input = payload["message"]
     chat_history, chat_lock = get_history_and_lock(x_session_id)
+    if(user_input.strip() == "Hello my mechanized assistant!"):
+        bot_rules = load_bot_rules()
+        chat_history.clear()
+        chat_history.append({"role": "system", "content": bot_rules})
+        user_input = load_instructions()
+        print(f"{"\x1b[43m"}[{x_session_id}] New Session Started.{"\x1b[0m"}")
+    else:
+        print(f"{"\x1b[43m"}[{x_session_id}] User: {user_input}{"\x1b[0m"}")
     # Create a temporary message list for this request (history + current user message)
     user_msg = {"role": "user", "content": user_input}
     temp_messages = list(chat_history) + [user_msg]
@@ -173,6 +213,7 @@ async def chat(payload: dict, x_session_id: str = Header(None, alias="X-Session-
             # commit after the model finishes
             chat_history.append(user_msg)
             chat_history.append({"role": "assistant", "content": collected})
+            print(f'{"\x1b[42m"}[{x_session_id}] K1T B0T: {collected}{"\x1b[0m"}')
     headers = {
         "Cache-Control": "no-cache, no-transform",
         "X-Accel-Buffering": "no",  # harmless even without nginx; some proxies respect it
